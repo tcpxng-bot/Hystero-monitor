@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hysteroscopy Fluid Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --blue:#1976D2; --blue-dark:#125ea3; --blue-tint:#E8F1FB;
+  --green:#2E7D32; --green-tint:#EAF5EA;
+  --amber:#ED8F03; --amber-tint:#FEF3E0;
+  --red:#C62828; --red-tint:#FBEAEA;
+  --bg:#F4F7FA; --card:#FFFFFF; --text:#223042; --text2:#6B7B8C; --border:#D8E2EB;
+  --radius:14px;
+}
+body.dark-theme{
+  --bg:#16202C; --card:#1E2A38; --text:#E8EEF4; --text2:#94A7B8; --border:#2C3B4C;
+  --blue-tint:#1B2E45; --green-tint:#1A2E1F; --amber-tint:#332512; --red-tint:#3A1A1A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter','Noto Sans Thai',sans-serif;
+  background:var(--bg); color:var(--text); min-height:100vh;
+  -webkit-font-smoothing:antialiased; transition:background .25s,color .25s;
+}
+input,textarea,select{outline:none;font-family:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+button:active{transform:scale(.97)}
+button:disabled{cursor:not-allowed}
+
+#topbar{
+  background:var(--card); border-bottom:1px solid var(--border);
+  padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  position:sticky; top:0; z-index:100;
+}
+@media (max-width:380px){
+  #topbar{padding:12px 10px; gap:6px}
+  #topbar-right{gap:5px}
+  .btn{padding:8px 11px; font-size:11.5px}
+  .icon-btn{width:32px; height:32px}
+}
+#topbar .logo{display:flex; align-items:center; gap:11px; min-width:0; flex:1}
+#topbar .logo-icon{
+  width:38px; height:38px; border-radius:10px; background:var(--blue);
+  display:flex; align-items:center; justify-content:center; font-size:18px; color:#fff; flex-shrink:0;
+}
+#topbar .title{font-size:15px; font-weight:700; color:var(--text); letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#topbar .subtitle{font-size:10.5px; color:var(--text2); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#topbar-right{display:flex; gap:8px; align-items:center; flex-shrink:0}
+.icon-btn{
+  width:34px; height:34px; border-radius:9px; background:var(--bg); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--text2);
+  transition:.15s;
+}
+.icon-btn:hover{background:var(--border)}
+.btn{border-radius:10px; padding:9px 16px; font-size:12.5px; font-weight:700; transition:.15s; letter-spacing:-.01em; white-space:nowrap; flex-shrink:0}
+.btn-primary{background:var(--blue); color:#fff}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-ghost{background:var(--bg); border:1px solid var(--border); color:var(--text2)}
+.btn-ghost:hover{background:var(--border)}
+.btn-green{background:var(--green); color:#fff}
+.btn-danger-outline{background:var(--red-tint); color:var(--red); border:1px solid var(--red)}
+#topbar-timer{
+  background:var(--blue-tint); border:1px solid var(--blue); border-radius:9px;
+  padding:5px 12px; font-size:11px; text-align:right; color:var(--blue-dark);
+}
+#topbar-timer b{font-size:13px}
+
+#sticky-deficit{
+  display:none; position:sticky; top:0; z-index:95;
+  background:var(--card); border-bottom:2px solid var(--border);
+  padding:10px 14px; align-items:center; justify-content:center; gap:8px;
+  box-shadow:0 2px 6px rgba(20,40,60,.05);
+  white-space:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+}
+#sticky-deficit::-webkit-scrollbar{display:none}
+#sticky-deficit .sd-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0}
+#sticky-deficit .sd-label{font-size:9.5px; color:var(--text2); font-weight:700; letter-spacing:.03em; text-transform:uppercase; flex-shrink:0}
+#sticky-deficit .sd-value{font-size:16px; font-weight:900; flex-shrink:0}
+#sticky-deficit .sd-sep{color:var(--border); font-size:13px; flex-shrink:0}
+#sticky-deficit .sd-remain{font-size:10.5px; color:var(--text2); font-weight:600; flex-shrink:0}
+
+#main{max-width:720px; margin:0 auto; padding:18px 16px 40px}
+.card{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:18px 20px; margin-bottom:14px; box-shadow:0 1px 2px rgba(20,40,60,.04);
+}
+.card-title{font-size:11px; color:var(--text2); font-weight:700; letter-spacing:.06em; margin-bottom:12px; text-transform:uppercase}
+.field-label{font-size:12px; color:var(--text2); margin-bottom:5px; font-weight:500}
+.field-input{
+  width:100%; background:var(--bg); border:1px solid var(--border); border-radius:9px;
+  color:var(--text); padding:10px 12px; font-size:13.5px; transition:.15s;
+}
+.field-input:focus{border-color:var(--blue); background:var(--card)}
+.field-input:disabled{background:var(--border); color:var(--text2)}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+
+.tabs{display:flex; gap:6px; margin-bottom:16px}
+.tab{
+  padding:9px 18px; border-radius:9px; font-size:13px; font-weight:600;
+  background:var(--card); color:var(--text2); border:1px solid var(--border); transition:.15s;
+}
+.tab.active{background:var(--blue); color:#fff; border-color:var(--blue)}
+
+#hero{
+  border-radius:18px; padding:24px 24px 20px; margin-bottom:14px;
+  background:var(--card); border:1.5px solid var(--border); position:relative; overflow:hidden;
+  transition:border-color .3s, box-shadow .3s;
+}
+#hero.state-safe{border-color:var(--green)}
+#hero.state-warning{border-color:var(--amber); animation:pulse-amber 2.2s ease-in-out infinite}
+#hero.state-danger{border-color:var(--red); animation:pulse-red 1.4s ease-in-out infinite}
+@keyframes pulse-amber{0%,100%{box-shadow:0 0 0 0 rgba(237,143,3,.18)}50%{box-shadow:0 0 0 8px rgba(237,143,3,0)}}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 0 0 rgba(198,40,40,.22)}50%{box-shadow:0 0 0 10px rgba(198,40,40,0)}}
+#hero-eyebrow{font-size:11px; font-weight:700; letter-spacing:.08em; color:var(--text2); text-transform:uppercase; margin-bottom:6px}
+#hero-status-badge{
+  display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:800;
+  padding:5px 14px; border-radius:99px; letter-spacing:.03em; margin-bottom:14px;
+}
+#hero-value{font-size:56px; font-weight:900; line-height:1; letter-spacing:-.02em}
+#hero-value span{font-size:18px; font-weight:700; margin-left:4px}
+#hero-grid{display:grid; grid-template-columns:1fr auto; gap:20px; align-items:flex-end; margin-top:6px}
+#hero-remaining{text-align:right}
+#hero-remaining .lbl{font-size:10.5px; color:var(--text2); font-weight:600; margin-bottom:2px}
+#hero-remaining .val{font-size:26px; font-weight:800; line-height:1}
+#hero-remaining .unit{font-size:11px; color:var(--text2)}
+#hero-gauge-wrap{margin-top:18px}
+#hero-gauge-labels{display:flex; justify-content:space-between; font-size:10.5px; color:var(--text2); margin-bottom:6px; font-weight:500}
+#hero-gauge-track{height:10px; background:var(--bg); border-radius:99px; overflow:hidden; border:1px solid var(--border)}
+#hero-gauge-fill{height:100%; border-radius:99px; transition:width .5s cubic-bezier(.4,0,.2,1), background .3s}
+#hero-footer{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap}
+.hero-chip{
+  font-size:11px; font-weight:600; color:var(--text2); background:var(--bg);
+  border:1px solid var(--border); border-radius:99px; padding:5px 12px; display:flex; align-items:center; gap:6px;
+}
+
+#clinical-panel{border-radius:var(--radius); padding:16px 20px; margin-bottom:14px; border:1px solid var(--border)}
+#clinical-panel .cp-title{font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin-bottom:10px}
+#clinical-panel ul{list-style:none; display:flex; flex-direction:column; gap:7px}
+#clinical-panel li{font-size:13px; line-height:1.5; display:flex; gap:8px}
+
+.stats{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px}
+.stat{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:13px 10px; text-align:center}
+.stat-label{font-size:9.5px; color:var(--text2); font-weight:700; letter-spacing:.05em; margin-bottom:5px; text-transform:uppercase}
+.stat-value{font-size:19px; font-weight:800}
+.stat-unit{font-size:10px; color:var(--text2)}
+
+.progress-box{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 16px; margin-bottom:14px}
+.progress-row{display:flex; justify-content:space-between; margin-bottom:6px; font-size:11.5px; font-weight:600; color:var(--text2)}
+.progress-track{height:7px; background:var(--bg); border-radius:99px; overflow:hidden; border:1px solid var(--border)}
+.progress-fill{height:100%; border-radius:99px; background:var(--blue); transition:width .4s}
+
+.tap-section-label{font-size:11px; font-weight:700; letter-spacing:.04em; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; text-transform:uppercase}
+.tap-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:14px}
+.tap-btn{
+  border-radius:11px; padding:14px 0; font-size:15px; font-weight:800;
+  border:1.5px solid var(--border); background:var(--bg); color:var(--text); transition:.15s;
+}
+.tap-btn:active{transform:scale(.95); filter:brightness(.97)}
+.tap-btn.intake{border-color:#bcd6f0; color:var(--blue)}
+.tap-btn.intake.lg{background:var(--blue-tint); border-color:var(--blue)}
+.tap-btn.output{border-color:#b6dcc0; color:var(--green)}
+.tap-btn.output.lg{background:var(--green-tint); border-color:var(--green)}
+#tap-preview{
+  background:var(--bg); border:1px solid var(--border); border-radius:11px;
+  padding:13px 16px; margin-bottom:12px;
+}
+.tap-preview-row{display:flex; justify-content:space-between; font-size:10.5px; color:var(--text2); margin-bottom:6px; font-weight:600}
+.tap-preview-values{display:flex; justify-content:space-between; align-items:center; font-size:16px; font-weight:800}
+
+.cp-row{
+  display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px;
+  border:1px solid var(--border); margin-bottom:7px; background:var(--card); transition:.15s;
+}
+.cp-row.latest{border-color:var(--blue); background:var(--blue-tint)}
+.cp-row .cp-num{
+  width:34px; height:34px; border-radius:8px; background:var(--bg); display:flex; flex-direction:column; align-items:center;
+  justify-content:center; font-size:11.5px; font-weight:800; color:var(--text2); flex-shrink:0; line-height:1.1;
+}
+.cp-row.latest .cp-num{background:var(--blue); color:#fff}
+.cp-badge{font-size:10px; font-weight:800; padding:3px 9px; border-radius:99px; letter-spacing:.02em}
+
+#alert-modal-overlay{
+  display:none; position:fixed; inset:0; z-index:9999; background:rgba(10,16,24,.72);
+  align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(2px);
+}
+#alert-modal{
+  background:var(--card); border-radius:20px; max-width:380px; width:100%; padding:30px 26px 24px;
+  text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+#alert-modal-icon{width:74px; height:74px; border-radius:50%; margin:0 auto 14px; display:flex; align-items:center; justify-content:center; font-size:34px}
+#alert-modal-title{font-size:20px; font-weight:900; letter-spacing:.02em; margin-bottom:14px}
+#alert-modal-deficit-lbl{font-size:11px; color:var(--text2); font-weight:600; margin-bottom:2px}
+#alert-modal-deficit{font-size:38px; font-weight:900; margin-bottom:16px}
+#alert-modal-actions{text-align:left; background:var(--bg); border-radius:12px; padding:14px 16px; margin-bottom:18px}
+#alert-modal-actions .lbl{font-size:10.5px; font-weight:700; color:var(--text2); letter-spacing:.04em; margin-bottom:8px; text-transform:uppercase}
+#alert-modal-actions ul{list-style:none; display:flex; flex-direction:column; gap:6px}
+#alert-modal-actions li{font-size:12.5px; line-height:1.4; display:flex; gap:7px}
+#alert-modal-confirm{width:100%; padding:14px; border-radius:11px; font-size:14.5px; font-weight:800; color:#fff}
+
+.modal-overlay{display:none; position:fixed; inset:0; background:rgba(10,16,24,.55); z-index:9000; align-items:center; justify-content:center; padding:20px}
+.modal-box{background:var(--card); border-radius:16px; max-width:380px; width:100%; padding:22px 20px}
+.radio-row{display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:9px; border:1px solid var(--border); margin-bottom:7px; cursor:pointer}
+.radio-row.checked{border-color:var(--blue); background:var(--blue-tint)}
+
+#sync-indicator{display:none; position:fixed; bottom:18px; right:18px; z-index:500; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:9px 15px; font-size:11.5px; color:var(--text2); box-shadow:0 4px 14px rgba(0,0,0,.08)}
+#cp-flash{display:none; position:fixed; top:74px; left:50%; transform:translateX(-50%); z-index:300; background:var(--green); color:#fff; font-size:13.5px; font-weight:700; padding:10px 22px; border-radius:99px; box-shadow:0 6px 18px rgba(46,125,50,.3); transition:opacity .3s}
+
+.case-row{background:var(--card); border:1px solid var(--border); border-radius:11px; padding:12px 16px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; font-size:13px}
+.case-row .name{font-weight:700; color:var(--text); font-size:13.5px}
+.case-row .meta{color:var(--text2); font-size:11px; margin-top:2px}
+
+@media print{
+  #topbar,#tabs,.tab,#input-section,.btn-print,.btn-excel,.no-print,#alert-modal-overlay,#sync-indicator,#cp-flash,#sticky-deficit,#screen-flash,.modal-overlay,#main>*{display:none!important}
+  body{background:#fff!important; color:#111}
+  #print-area{display:block!important; margin:0; padding:0}
+  @page{size:A4 portrait; margin:10mm 13mm}
+}
+#print-area{display:none}
+#screen-flash{display:none}
+
+::placeholder{color:#A7B6C4}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-icon">💧</div>
+    <div>
+      <div class="title">Hysteroscopy Fluid Monitor</div>
+      <div class="subtitle">Fluid Deficit Monitoring System</div>
+    </div>
+  </div>
+  <div id="topbar-right">
+    <button class="icon-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="สลับธีม">🌙</button>
+    <button class="btn btn-ghost" onclick="openSettings()">⚙ ตั้งค่า</button>
+    <div id="topbar-timer" style="display:none">
+      <div style="font-size:9px">ระยะเวลา</div>
+      <b id="elapsed-display">0 นาที</b>
+    </div>
+  </div>
+</div>
+
+<div id="sticky-deficit">
+  <span class="sd-dot" id="sd-dot"></span>
+  <span class="sd-label">DEFICIT</span>
+  <span class="sd-value" id="sd-value">0 mL</span>
+  <span class="sd-sep">|</span>
+  <span class="sd-remain">เหลือ <b id="sd-remain">2,500</b> mL ก่อน Hard Stop</span>
+</div>
+
+<div id="main">
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" onclick="showTab('record')">📋 บันทึกเคส</div>
+    <div class="tab" onclick="showTab('history')">📁 ประวัติเคส</div>
+  </div>
+
+  <div id="tab-record">
+
+    <div class="card" id="patient-card">
+      <div class="card-title">ข้อมูลผู้ป่วย</div>
+      <div class="grid2">
+        <div><div class="field-label">HN / รหัสผู้ป่วย</div><input class="field-input" id="f-hn" placeholder="รหัสผู้ป่วย"></div>
+        <div><div class="field-label">ชื่อ-นามสกุล</div><input class="field-input" id="f-name" placeholder="ชื่อผู้ป่วย"></div>
+        <div><div class="field-label">วันที่ผ่าตัด</div><input class="field-input" id="f-date" type="date"></div>
+        <div><div class="field-label">แพทย์ผ่าตัด</div><input class="field-input" id="f-surgeon" placeholder="ชื่อแพทย์"></div>
+        <div><div class="field-label">การวินิจฉัย (Diagnosis)</div><input class="field-input" id="f-dx" placeholder="เช่น Myoma uteri, AUB"></div>
+        <div><div class="field-label">หัตถการ (Operation)</div><input class="field-input" id="f-operation" placeholder="เช่น Hysteroscopic myomectomy"></div>
+        <div style="grid-column:1/-1"><div class="field-label">พยาบาลผู้บันทึก</div><input class="field-input" id="f-nurse" placeholder="ชื่อพยาบาล"></div>
+        <div style="grid-column:1/-1">
+          <div style="background:var(--blue-tint); border:1px solid var(--blue); border-radius:9px; padding:9px 12px; display:flex; align-items:center; gap:8px">
+            <span style="font-size:15px">💧</span>
+            <span style="font-size:12px; color:var(--blue-dark); font-weight:700">Distension Media: NSS (Isotonic)</span>
+            <span style="font-size:10.5px; color:var(--text2); margin-left:auto">Hard Stop 2,500 mL</span>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="start-case-btn" style="width:100%; margin-top:14px; padding:13px; font-size:14.5px" onclick="startCase()">🏥 เริ่มเคส Hysteroscopy</button>
+    </div>
+
+    <div id="active-case" style="display:none">
+
+      <div id="hero" class="state-safe">
+        <div id="hero-eyebrow">CURRENT FLUID DEFICIT</div>
+        <div id="hero-status-badge">● SAFE</div>
+        <div id="hero-grid">
+          <div>
+            <div id="hero-value">0<span>mL</span></div>
+          </div>
+          <div id="hero-remaining">
+            <div class="lbl">REMAINING BEFORE HARD STOP</div>
+            <div class="val" id="hero-remaining-val">2,500</div>
+            <div class="unit">mL</div>
+          </div>
+        </div>
+        <div id="hero-gauge-wrap">
+          <div id="hero-gauge-labels"><span>0</span><span id="hero-gauge-pct">0%</span><span>2,500 mL (Hard Stop)</span></div>
+          <div id="hero-gauge-track"><div id="hero-gauge-fill" style="width:0%"></div></div>
+        </div>
+        <div id="hero-footer">
+          <div class="hero-chip">💧 NSS Isotonic</div>
+          <div class="hero-chip">⛔ Hard Stop 2,500 mL</div>
+          <div class="hero-chip" id="hero-desc-chip">✓ อยู่ในเกณฑ์ปกติ</div>
+        </div>
+      </div>
+
+      <div id="clinical-panel">
+        <div class="cp-title" id="cp-title">CLINICAL RECOMMENDATION — SAFE</div>
+        <ul id="cp-list"></ul>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Intake</div><div class="stat-value" id="s-intake" style="color:var(--blue)">0</div><div class="stat-unit">mL</div></div>
+        <div class="stat"><div class="stat-label">Output</div><div class="stat-value" id="s-output" style="color:var(--green)">0</div><div class="stat-unit">mL</div></div>
+        <div class="stat"><div class="stat-label">Next CP</div><div class="stat-value" id="s-next" style="color:var(--amber)">+2,000</div><div class="stat-unit">mL</div></div>
+      </div>
+
+      <div class="progress-box">
+        <div class="progress-row"><span id="progress-label">Progress to CP1 (0 / 2,000 mL)</span><span id="progress-pct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progress-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="card" id="trend-card" style="display:none">
+        <div class="card-title">Deficit Trend</div>
+        <div id="trend-graph" style="display:flex; align-items:flex-end; gap:5px; height:56px"></div>
+        <div style="display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--text2)">
+          <span>CP1</span><span id="trend-last-label"></span>
+        </div>
+      </div>
+
+      <div class="card" id="input-section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px">
+          <div>
+            <div class="card-title" style="margin-bottom:0">Checkpoint #<span id="cp-no">1</span></div>
+            <div id="cp-target-hint" style="font-size:10.5px; color:var(--text2); margin-top:2px">เป้าหมายสะสม: <b id="cp-target-val" style="color:var(--blue)">2,000</b> mL</div>
+          </div>
+          <button class="btn btn-ghost" id="manual-toggle-btn" style="padding:5px 11px; font-size:11px" onclick="toggleManual()">✏️ กรอกเอง</button>
+        </div>
+
+        <div id="tap-mode">
+          <div class="tap-section-label" style="color:var(--blue)"><span>💧 INTAKE (NSS)</span><span id="tap-media-display">0 mL</span></div>
+          <div class="tap-grid">
+            <button class="tap-btn intake" onclick="tapMedia(100,this)">+100</button>
+            <button class="tap-btn intake" onclick="tapMedia(500,this)">+500</button>
+            <button class="tap-btn intake lg" onclick="tapMedia(1000,this)">+1,000</button>
+          </div>
+          <div class="tap-section-label" style="color:var(--green)"><span>🪣 OUTPUT</span><span id="tap-output-display">0 mL</span></div>
+          <div class="tap-grid">
+            <button class="tap-btn output" onclick="tapOutput(100,this)">+100</button>
+            <button class="tap-btn output" onclick="tapOutput(500,this)">+500</button>
+            <button class="tap-btn output lg" onclick="tapOutput(1000,this)">+1,000</button>
+          </div>
+          <div id="tap-preview">
+            <div class="tap-preview-row"><span>Intake ครั้งนี้</span><span>Output ครั้งนี้</span><span>Deficit หลังบันทึก</span></div>
+            <div class="tap-preview-values">
+              <span id="prev-media" style="color:var(--blue)">0 mL</span>
+              <span style="color:var(--text2); font-weight:400">→</span>
+              <span id="prev-output" style="color:var(--green)">0 mL</span>
+              <span style="color:var(--text2); font-weight:400">=</span>
+              <span id="prev-deficit" style="color:var(--text2)">— mL</span>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:auto 1fr; gap:9px">
+            <button class="btn btn-danger-outline" style="padding:13px 18px" onclick="resetTap()">✕ Reset</button>
+            <button class="btn btn-primary" id="confirm-btn" style="padding:13px" onclick="addCheckpoint()" disabled>✓ บันทึก Checkpoint</button>
+          </div>
+        </div>
+
+        <div id="manual-mode" style="display:none">
+          <div class="grid2" style="margin-bottom:10px">
+            <div><div class="field-label">Media ที่ใช้ (mL)</div><input type="number" min="0" step="1" inputmode="numeric" class="field-input" id="i-media" placeholder="เช่น 1000" oninput="updatePreview()" style="font-size:18px; font-weight:700; color:var(--blue)"></div>
+            <div><div class="field-label">Output (mL)</div><input type="number" min="0" step="1" inputmode="numeric" class="field-input" id="i-output" placeholder="เช่น 800" oninput="updatePreview()" style="font-size:18px; font-weight:700; color:var(--green)"></div>
+          </div>
+          <div id="preview-box" style="display:none; background:var(--bg); border:1px solid var(--border); border-radius:9px; padding:9px 12px; margin-bottom:10px; font-size:11.5px; color:var(--text2)"></div>
+          <button class="btn btn-primary" style="width:100%; padding:13px" onclick="addCheckpoint()">＋ บันทึก Checkpoint</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">หมายเหตุ / Action taken</div>
+        <textarea id="i-notes" class="field-input" style="resize:vertical; min-height:60px" placeholder="บันทึกการดำเนินการ เช่น ให้ Furosemide IV, หยุดหัตถการ..."></textarea>
+      </div>
+
+      <div id="cp-history" style="display:block">
+        <div class="card-title" style="margin:4px 4px 10px">CHECKPOINT HISTORY <span id="cp-count" style="float:right; font-weight:500; text-transform:none; color:var(--text2)"></span></div>
+        <div id="cp-rows"><div id="cp-empty-state" style="text-align:center; color:var(--text2); font-size:12px; padding:14px; background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:7px">ยังไม่มีการบันทึก Checkpoint — กดปุ่มด้านบนเพื่อเริ่มบันทึกครั้งแรก</div></div>
+        <div style="display:flex; gap:8px; margin-top:10px">
+          <button class="btn btn-ghost" style="flex:1; padding:11px" onclick="printCase()">🖨 พิมพ์รายงาน</button>
+          <button class="btn btn-green" style="flex:1; padding:11px" onclick="exportExcel()">📊 Export Excel</button>
+          <button class="btn btn-danger-outline" style="padding:11px 16px" onclick="confirmEnd()">จบเคส</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="tab-history" style="display:none">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:0">ประวัติเคสทั้งหมด</div>
+        <div style="display:flex; gap:8px">
+          <button class="btn btn-green" style="padding:7px 12px; font-size:11px" onclick="exportAllExcel()">📊 Export รวม</button>
+          <button class="btn btn-danger-outline" style="padding:7px 12px; font-size:11px" onclick="clearAll()">🗑 ล้างข้อมูล</button>
+        </div>
+      </div>
+      <div id="history-list"><div style="text-align:center; color:var(--text2); padding:24px; font-size:12.5px">ยังไม่มีประวัติเคส</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="alert-modal-overlay">
+  <div id="alert-modal">
+    <div id="alert-modal-icon"></div>
+    <div id="alert-modal-title"></div>
+    <div id="alert-modal-deficit-lbl">FLUID DEFICIT</div>
+    <div id="alert-modal-deficit"></div>
+    <div id="alert-modal-actions">
+      <div class="lbl">Recommended Action</div>
+      <ul id="alert-modal-list"></ul>
+    </div>
+    <button id="alert-modal-confirm" onclick="closeAlertModal()"></button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settings-overlay">
+  <div class="modal-box">
+    <div style="font-size:15px; font-weight:800; margin-bottom:3px">⚙ ตั้งค่า</div>
+    <div style="font-size:11px; color:var(--text2); margin-bottom:16px">เชื่อมต่อ Google Sheets และตั้งค่าเสียงแจ้งเตือน</div>
+    <div style="background:var(--amber-tint); border:1px solid var(--amber); color:var(--text); border-radius:9px; padding:9px 11px; font-size:11px; line-height:1.45; margin-bottom:14px">
+      ข้อมูลผู้ป่วยและประวัติเคสจะถูกเก็บในเครื่องนี้ผ่านเบราว์เซอร์ ควรล้างข้อมูลหลังใช้งานบนเครื่องร่วม และตรวจสอบนโยบายข้อมูลผู้ป่วยของหน่วยงานก่อนใช้จริง
+    </div>
+
+    <div style="font-size:10.5px; font-weight:700; color:var(--text2); letter-spacing:.04em; margin-bottom:8px; text-transform:uppercase">เสียงแจ้งเตือน (Voice Alert)</div>
+    <div class="radio-row" id="voice-row-th" onclick="setVoiceMode('th')"><input type="radio" name="voice" id="voice-th"><label for="voice-th">🇹🇭 ภาษาไทย</label></div>
+    <div class="radio-row" id="voice-row-en" onclick="setVoiceMode('en')"><input type="radio" name="voice" id="voice-en"><label for="voice-en">🇬🇧 English</label></div>
+    <div class="radio-row" id="voice-row-mute" onclick="setVoiceMode('mute')"><input type="radio" name="voice" id="voice-mute"><label for="voice-mute">🔇 ปิดเสียง (Mute)</label></div>
+
+    <div style="font-size:10.5px; font-weight:700; color:var(--text2); letter-spacing:.04em; margin:16px 0 8px; text-transform:uppercase">Google Sheets URL</div>
+    <input id="settings-url" type="text" class="field-input" placeholder="https://script.google.com/macros/s/...">
+    <div id="settings-status" style="font-size:11px; color:var(--text2); margin:8px 0 14px; min-height:16px"></div>
+    <div style="display:flex; gap:8px">
+      <button class="btn btn-ghost" style="flex:1; padding:10px" onclick="closeSettings()">ปิด</button>
+      <button class="btn btn-ghost" style="flex:1; padding:10px" onclick="testConnection()">ทดสอบ</button>
+      <button class="btn btn-primary" style="flex:1; padding:10px" onclick="saveSettings()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div id="modal-msg" style="font-size:14px; margin-bottom:20px; line-height:1.5"></div>
+    <div style="display:flex; gap:10px">
+      <button class="btn btn-ghost" style="flex:1; padding:11px" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-primary" id="modal-ok" style="flex:1; padding:11px">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<div id="sync-indicator"><span id="sync-text">⟳ กำลังบันทึกไปยัง Google Sheets...</span></div>
+<div id="cp-flash">✓ บันทึก Checkpoint แล้ว!</div>
+<div id="screen-flash"></div>
+<div id="print-area"></div>
+
+<div style="text-align:center; font-size:9.5px; color:var(--text2); margin-top:8px; padding-bottom:10px">
+  Hysteroscopy Fluid Monitor • NSS 1,000 mL/ขวด • Monitor ทุก 2,000 mL
+</div>
+
+<script>
+let state = { started:false, startTime:null, mediaUsed:0, outputCollected:0, checkpoints:[], patient:{}, timerInterval:null };
+let SCRIPT_URL = localStorage.getItem('hystero_script_url') || '';
+let voiceMode = localStorage.getItem('hystero_voice') || 'th';
+let prevAlertLevel = 'SAFE';
+let tapMediaVal = 0, tapOutputVal = 0, isManualMode = false;
+const HARD_STOP = 2500;
+
+const LEVELS = [
+  { max:1500,  key:'SAFE',    color:'var(--green)', tint:'var(--green-tint)', hex:'#2E7D32' },
+  { max:2500,  key:'WARNING', color:'var(--amber)',  tint:'var(--amber-tint)', hex:'#ED8F03' },
+  { max:99999, key:'DANGER',  color:'var(--red)',    tint:'var(--red-tint)',   hex:'#C62828' },
+];
+function getLevel(d){ return LEVELS.find(l=>d<l.max) || LEVELS[2]; }
+function esc(v){
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+function readMlInput(id){
+  const raw = document.getElementById(id).value;
+  if(raw === '') return 0;
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 0 ? value : NaN;
+}
+function getStoredCases(){
+  try{
+    const cases = JSON.parse(localStorage.getItem('hystero_cases') || '[]');
+    return Array.isArray(cases) ? cases : [];
+  }catch(e){
+    return [];
+  }
+}
+function safeFilePart(v, fallback='case'){
+  const cleaned = String(v || '').replace(/[\\/:*?"<>|]+/g, '_').trim();
+  return cleaned || fallback;
+}
+function safeSheetName(v){
+  return String(v || 'Unknown').replace(/[\[\]:*?/\\]+/g, '_').slice(0,31) || 'Unknown';
+}
+
+const CLINICAL = {
+  SAFE: ['✓ ติดตามตามรอบปกติ (ทุก 2,000 mL)', '✓ บันทึก intake/output ทุก checkpoint', '✓ รักษาความถูกต้องของ fluid balance'],
+  WARNING: ['⚠ แจ้งแพทย์ผู้ผ่าตัดทราบ', '⚠ ติดตามอย่างใกล้ชิด', '⚠ ประเมินอาการผู้ป่วยซ้ำ', '⚠ พิจารณาจำกัดเวลาทำหัตถการ', '⚠ เตรียมพร้อมหยุดหัตถการหากค่ายังเพิ่มขึ้น'],
+  DANGER: ['⛔ หยุดทำหัตถการทันที', '⛔ แจ้งแพทย์ผู้ผ่าตัดทันที', '⛔ ประเมินอาการผู้ป่วยซ้ำ', '⛔ ติดตาม vital signs', '⛔ พิจารณาตรวจ electrolyte หากมีข้อบ่งชี้', '⛔ บันทึกการดำเนินการที่ทำ'],
+};
+
+const VOICE_MSG = {
+  th:{ WARNING:'คำเตือน ฟลูอิด เดฟิซิต ถึงระดับเฝ้าระวังแล้ว กรุณาแจ้งแพทย์และติดตามอย่างใกล้ชิด',
+       DANGER:'อันตราย ฟลูอิด เดฟิซิต เกินค่าที่กำหนดแล้ว ควรหยุดหัตถการทันที' },
+  en:{ WARNING:'Warning. Fluid deficit has reached the caution level. Please notify the surgeon and continue close monitoring.',
+       DANGER:'Critical alert. Fluid deficit exceeded the maximum safe limit. Stop procedure immediately.' },
+};
+
+window.onload = () => {
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  applyTheme(localStorage.getItem('hystero_theme') || 'light');
+  renderHistory();
+  setVoiceMode(voiceMode, true);
+  positionStickyBar();
+  window.addEventListener('resize', positionStickyBar);
+};
+function positionStickyBar(){
+  const tb=document.getElementById('topbar');
+  document.getElementById('sticky-deficit').style.top = tb.offsetHeight+'px';
+}
+
+function applyTheme(theme){
+  const btn=document.getElementById('theme-toggle-btn');
+  if(theme==='dark'){ document.body.classList.add('dark-theme'); if(btn) btn.textContent='☀️'; }
+  else { document.body.classList.remove('dark-theme'); if(btn) btn.textContent='🌙'; }
+  localStorage.setItem('hystero_theme', theme);
+}
+function toggleTheme(){ applyTheme(document.body.classList.contains('dark-theme') ? 'light' : 'dark'); }
+
+function showTab(t){
+  document.getElementById('tab-record').style.display = t==='record'?'block':'none';
+  document.getElementById('tab-history').style.display = t==='history'?'block':'none';
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active', i===(t==='record'?0:1)));
+  if(t==='history') renderHistory();
+}
+
+function setVoiceMode(mode, silent){
+  voiceMode = mode;
+  localStorage.setItem('hystero_voice', mode);
+  ['th','en','mute'].forEach(m=>{
+    const row=document.getElementById('voice-row-'+m);
+    const radio=document.getElementById('voice-'+m);
+    if(row) row.classList.toggle('checked', m===mode);
+    if(radio) radio.checked = (m===mode);
+  });
+}
+function speak(level){
+  if(voiceMode==='mute') return;
+  const lang = voiceMode==='en' ? 'en' : 'th';
+  const msg = VOICE_MSG[lang][level];
+  if(!msg || !window.speechSynthesis) return;
+  try{
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(msg);
+    u.lang = lang==='th' ? 'th-TH' : 'en-US';
+    u.rate = 0.95;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+let audioCtx=null;
+function getAudioCtx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function beep(freq,dur,vol,delay){
+  try{
+    const ctx=getAudioCtx(); const osc=ctx.createOscillator(); const gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination); osc.frequency.value=freq; osc.type='sine';
+    gain.gain.setValueAtTime(0,ctx.currentTime+delay);
+    gain.gain.linearRampToValueAtTime(vol,ctx.currentTime+delay+.01);
+    gain.gain.linearRampToValueAtTime(0,ctx.currentTime+delay+dur);
+    osc.start(ctx.currentTime+delay); osc.stop(ctx.currentTime+delay+dur+.05);
+  }catch(e){}
+}
+function playWarningBeep(){ beep(740,.16,.32,0); beep(740,.16,.32,.22); }
+function playDangerBeep(){ beep(880,.18,.5,0); beep(1046,.18,.5,.22); beep(880,.18,.5,.44); }
+document.addEventListener('touchstart',()=>{try{getAudioCtx();}catch(e){}},{once:true});
+document.addEventListener('click',()=>{try{getAudioCtx();}catch(e){}},{once:true});
+
+function openAlertModal(level, deficit){
+  const lv = LEVELS.find(l=>l.key===level);
+  const icon = document.getElementById('alert-modal-icon');
+  const title = document.getElementById('alert-modal-title');
+  const list = document.getElementById('alert-modal-list');
+  const confirm = document.getElementById('alert-modal-confirm');
+  const dv = document.getElementById('alert-modal-deficit');
+
+  if(level==='WARNING'){
+    icon.style.background='var(--amber-tint)'; icon.textContent='⚠'; icon.style.color='var(--amber)';
+    title.textContent='WARNING'; title.style.color='var(--amber)';
+    confirm.textContent='I Understand'; confirm.style.background='var(--amber)';
+  } else {
+    icon.style.background='var(--red-tint)'; icon.textContent='⛔'; icon.style.color='var(--red)';
+    title.textContent='HARD STOP'; title.style.color='var(--red)';
+    confirm.textContent='Confirm Hard Stop'; confirm.style.background='var(--red)';
+  }
+  dv.textContent = deficit.toLocaleString()+' mL';
+  dv.style.color = lv.color;
+  list.innerHTML = CLINICAL[level].map(t=>`<li>${t}</li>`).join('');
+  document.getElementById('alert-modal-overlay').style.display='flex';
+}
+function closeAlertModal(){ document.getElementById('alert-modal-overlay').style.display='none'; }
+
+function triggerSmartAlert(level, deficit){
+  if(level===prevAlertLevel) return;
+  prevAlertLevel = level;
+  if(level==='WARNING'){ playWarningBeep(); speak('WARNING'); openAlertModal('WARNING', deficit); }
+  else if(level==='DANGER'){ playDangerBeep(); speak('DANGER'); openAlertModal('DANGER', deficit); }
+}
+
+function startCase(){
+  const hn = document.getElementById('f-hn').value.trim();
+  if(!hn){ showModal('กรุณากรอก HN ก่อนเริ่มเคส', ()=>{}); return; }
+  state.patient = {
+    hn, name: document.getElementById('f-name').value,
+    date: document.getElementById('f-date').value,
+    surgeon: document.getElementById('f-surgeon').value,
+    dx: document.getElementById('f-dx').value,
+    operation: document.getElementById('f-operation').value,
+    nurse: document.getElementById('f-nurse').value,
+    mediaType: 'NSS',
+  };
+  state.started=true; state.startTime=new Date();
+  state.mediaUsed=0; state.outputCollected=0; state.checkpoints=[];
+  prevAlertLevel='SAFE';
+  ['f-hn','f-name','f-date','f-surgeon','f-dx','f-operation','f-nurse'].forEach(id=>document.getElementById(id).disabled=true);
+  const btn=document.getElementById('start-case-btn');
+  btn.textContent='⟳ เริ่มเคสใหม่'; btn.onclick=confirmResetCase; btn.className='btn btn-ghost';
+  document.getElementById('active-case').style.display='block';
+  document.getElementById('topbar-timer').style.display='block';
+  document.getElementById('sticky-deficit').style.display='flex';
+  positionStickyBar();
+  state.timerInterval=setInterval(updateTimer,30000);
+  updateUI();
+  window.scrollTo({top:document.getElementById('active-case').offsetTop-80, behavior:'smooth'});
+}
+function updateTimer(){
+  if(!state.startTime) return;
+  document.getElementById('elapsed-display').textContent = Math.round((new Date()-state.startTime)/60000)+' นาที';
+}
+function confirmEnd(){
+  showModal('จบเคสและบันทึกลงประวัติ?', ()=>{ saveToHistory(); resetCase(); });
+}
+function confirmResetCase(){
+  showModal('เริ่มเคสใหม่โดยไม่บันทึกเคสปัจจุบัน? ข้อมูลที่ยังไม่บันทึกจะหาย', resetCase);
+}
+function resetCase(){
+  closeModal();
+  clearInterval(state.timerInterval);
+  state={started:false,startTime:null,mediaUsed:0,outputCollected:0,checkpoints:[],patient:{},timerInterval:null};
+  prevAlertLevel='SAFE'; tapMediaVal=0; tapOutputVal=0;
+  ['f-hn','f-name','f-date','f-surgeon','f-dx','f-operation','f-nurse'].forEach(id=>{
+    const el=document.getElementById(id); el.disabled=false; el.value='';
+  });
+  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  const btn=document.getElementById('start-case-btn');
+  btn.textContent='🏥 เริ่มเคส Hysteroscopy'; btn.onclick=startCase; btn.className='btn btn-primary';
+  document.getElementById('active-case').style.display='none';
+  document.getElementById('topbar-timer').style.display='none';
+  document.getElementById('sticky-deficit').style.display='none';
+  document.getElementById('i-notes').value='';
+  document.getElementById('cp-history').style.display='block';
+  document.getElementById('cp-rows').innerHTML='<div id="cp-empty-state" style="text-align:center; color:var(--text2); font-size:12px; padding:14px; background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:7px">ยังไม่มีการบันทึก Checkpoint — กดปุ่มด้านบนเพื่อเริ่มบันทึกครั้งแรก</div>';
+  document.getElementById('trend-card').style.display='none';
+  updateTapDisplays();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function animateTap(btn){ if(!btn) return; btn.style.transform='scale(.93)'; setTimeout(()=>btn.style.transform='',120); }
+function tapMedia(amt,btn){ tapMediaVal+=amt; animateTap(btn); updateTapPreview(); }
+function tapOutput(amt,btn){ tapOutputVal+=amt; animateTap(btn); updateTapPreview(); }
+function resetTap(){ tapMediaVal=0; tapOutputVal=0; updateTapPreview(); }
+function updateTapDisplays(){
+  document.getElementById('tap-media-display').textContent='0 mL';
+  document.getElementById('tap-output-display').textContent='0 mL';
+  document.getElementById('prev-media').textContent='0 mL';
+  document.getElementById('prev-output').textContent='0 mL';
+  const pd=document.getElementById('prev-deficit'); pd.textContent='— mL'; pd.style.color='var(--text2)';
+  const cb=document.getElementById('confirm-btn'); cb.disabled=true; cb.style.opacity='.5';
+}
+function updateTapPreview(){
+  document.getElementById('tap-media-display').textContent=tapMediaVal.toLocaleString()+' mL';
+  document.getElementById('tap-output-display').textContent=tapOutputVal.toLocaleString()+' mL';
+  document.getElementById('prev-media').textContent=tapMediaVal.toLocaleString()+' mL';
+  document.getElementById('prev-output').textContent=tapOutputVal.toLocaleString()+' mL';
+  const newDef=Math.max(0,(state.mediaUsed+tapMediaVal)-(state.outputCollected+tapOutputVal));
+  const btn=document.getElementById('confirm-btn');
+  const pd=document.getElementById('prev-deficit');
+  if(tapMediaVal>0){
+    const lv=getLevel(newDef);
+    pd.textContent=newDef.toLocaleString()+' mL'; pd.style.color=lv.color;
+    btn.disabled=false; btn.style.opacity='1';
+    updateStickyDeficit(newDef, lv, true);
+  } else {
+    pd.textContent='— mL'; pd.style.color='var(--text2)';
+    btn.disabled=true; btn.style.opacity='.5';
+    updateStickyDeficit(Math.max(0,state.mediaUsed-state.outputCollected), getLevel(Math.max(0,state.mediaUsed-state.outputCollected)), false);
+  }
+}
+function toggleManual(){
+  isManualMode=!isManualMode;
+  document.getElementById('tap-mode').style.display=isManualMode?'none':'block';
+  document.getElementById('manual-mode').style.display=isManualMode?'block':'none';
+  const b=document.getElementById('manual-toggle-btn');
+  b.textContent=isManualMode?'⚡ One-Tap':'✏️ กรอกเอง';
+}
+function updatePreview(){
+  const m=readMlInput('i-media');
+  const o=readMlInput('i-output');
+  if(Number.isNaN(m) || Number.isNaN(o)){
+    document.getElementById('preview-box').style.display='block';
+    document.getElementById('preview-box').textContent='กรุณากรอกตัวเลขจำนวนเต็มตั้งแต่ 0 ขึ้นไปเท่านั้น';
+    return;
+  }
+  if(m>0){
+    const newDef=Math.max(0,(state.mediaUsed+m)-(state.outputCollected+o));
+    const lv=getLevel(newDef);
+    document.getElementById('preview-box').style.display='block';
+    document.getElementById('preview-box').innerHTML=`Deficit หลังบันทึก: <strong style="color:${lv.color}">${newDef.toLocaleString()} mL</strong>`;
+    updateStickyDeficit(newDef, lv, true);
+  } else {
+    document.getElementById('preview-box').style.display='none';
+    const def=Math.max(0,state.mediaUsed-state.outputCollected);
+    updateStickyDeficit(def, getLevel(def), false);
+  }
+}
+
+function addCheckpoint(){
+  let m,o;
+  if(isManualMode){ m=readMlInput('i-media'); o=readMlInput('i-output'); }
+  else { m=tapMediaVal; o=tapOutputVal; }
+  if(Number.isNaN(m) || Number.isNaN(o)){ showModal('กรุณากรอกตัวเลขจำนวนเต็มตั้งแต่ 0 ขึ้นไปเท่านั้น', ()=>{}); return; }
+  if(m<=0){ showModal('กรุณาเลือก Media ที่ใช้ก่อน', ()=>{}); return; }
+
+  const newMedia=state.mediaUsed+m, newOutput=state.outputCollected+o, newDef=newMedia-newOutput;
+  const t=new Date(); const elapsed=Math.round((t-state.startTime)/60000);
+  state.checkpoints.push({
+    no:state.checkpoints.length+1,
+    time:t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}),
+    elapsed, addMedia:m, addOutput:o, cumMedia:newMedia, cumOutput:newOutput, deficit:newDef,
+    level:getLevel(Math.max(0,newDef)).key,
+  });
+  state.mediaUsed=newMedia; state.outputCollected=newOutput;
+
+  tapMediaVal=0; tapOutputVal=0; updateTapDisplays();
+  try{ document.getElementById('i-media').value=''; document.getElementById('i-output').value=''; }catch(e){}
+  try{ document.getElementById('preview-box').style.display='none'; }catch(e){}
+  showCpFlash();
+  updateUI();
+}
+function showCpFlash(){
+  const el=document.getElementById('cp-flash');
+  el.style.display='block'; el.style.opacity='1';
+  setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>{el.style.display='none'; el.style.opacity='1';},300); },1700);
+}
+
+function updateUI(){
+  const def=Math.max(0,state.mediaUsed-state.outputCollected);
+  const lv=getLevel(def);
+
+  const hero=document.getElementById('hero');
+  hero.className = lv.key==='SAFE'?'state-safe':lv.key==='WARNING'?'state-warning':'state-danger';
+  const badge=document.getElementById('hero-status-badge');
+  badge.textContent='● '+lv.key;
+  badge.style.background=lv.tint; badge.style.color=lv.color;
+  document.getElementById('hero-value').innerHTML=def.toLocaleString()+'<span>mL</span>';
+  document.getElementById('hero-value').style.color=lv.color;
+  const remaining=Math.max(0,HARD_STOP-def);
+  document.getElementById('hero-remaining-val').textContent=remaining.toLocaleString();
+  document.getElementById('hero-remaining-val').style.color=lv.color;
+  const pct=Math.min(100,Math.round((def/HARD_STOP)*100));
+  document.getElementById('hero-gauge-fill').style.width=pct+'%';
+  document.getElementById('hero-gauge-fill').style.background=lv.color;
+  document.getElementById('hero-gauge-pct').textContent=pct+'%';
+  const descChip=document.getElementById('hero-desc-chip');
+  descChip.textContent = lv.key==='SAFE' ? '✓ อยู่ในเกณฑ์ปกติ' : lv.key==='WARNING' ? '⚠ เฝ้าระวัง — แจ้งแพทย์' : '⛔ เกิน Hard Stop — หยุดทันที';
+  descChip.style.color=lv.color; descChip.style.borderColor=lv.color;
+
+  const cp=document.getElementById('clinical-panel');
+  cp.style.background=lv.tint; cp.style.borderColor=lv.color;
+  document.getElementById('cp-title').textContent='CLINICAL RECOMMENDATION — '+lv.key;
+  document.getElementById('cp-title').style.color=lv.color;
+  document.getElementById('cp-list').innerHTML=CLINICAL[lv.key].map(t=>`<li style="color:var(--text)">${t}</li>`).join('');
+
+  document.getElementById('s-intake').textContent=state.mediaUsed.toLocaleString();
+  document.getElementById('s-output').textContent=state.outputCollected.toLocaleString();
+  const prevCP=Math.floor(state.mediaUsed/2000)*2000, nextCP=Math.ceil((state.mediaUsed+1)/2000)*2000;
+  document.getElementById('s-next').textContent='+'+(nextCP-state.mediaUsed).toLocaleString();
+  const ppct=state.mediaUsed===0?0:((state.mediaUsed-prevCP)/2000)*100;
+  document.getElementById('progress-bar').style.width=Math.min(ppct,100)+'%';
+  document.getElementById('progress-label').textContent=`Progress to CP${state.checkpoints.length+1} (${state.mediaUsed.toLocaleString()}/${nextCP.toLocaleString()} mL)`;
+  document.getElementById('progress-pct').textContent=Math.round(ppct)+'%';
+  document.getElementById('cp-no').textContent=state.checkpoints.length+1;
+  document.getElementById('cp-target-val').textContent=nextCP.toLocaleString();
+
+  if(state.checkpoints.length>0){
+    document.getElementById('trend-card').style.display='block';
+    const maxDef=Math.max(HARD_STOP,...state.checkpoints.map(c=>Math.max(0,c.deficit)));
+    document.getElementById('trend-graph').innerHTML=state.checkpoints.map(cp=>{
+      const d=Math.max(0,cp.deficit); const h=Math.max(4,Math.round((d/maxDef)*56));
+      const l=getLevel(d);
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="font-size:7px;color:${l.color}">${d>=1000?(d/1000).toFixed(1)+'k':d}</div>
+        <div style="width:100%;height:${h}px;background:${l.color};border-radius:3px 3px 0 0;min-width:8px"></div>
+        <div style="font-size:7px;color:var(--text2)">${cp.no}</div></div>`;
+    }).join('');
+    document.getElementById('trend-last-label').textContent='CP'+state.checkpoints.length;
+  }
+
+  const rows=document.getElementById('cp-rows');
+  rows.innerHTML='';
+  if(state.checkpoints.length===0){
+    rows.innerHTML='<div id="cp-empty-state" style="text-align:center; color:var(--text2); font-size:12px; padding:14px; background:var(--card); border:1px solid var(--border); border-radius:10px; margin-bottom:7px">ยังไม่มีการบันทึก Checkpoint — กดปุ่มด้านบนเพื่อเริ่มบันทึกครั้งแรก</div>';
+  }
+  [...state.checkpoints].reverse().forEach((cp,i)=>{
+    const l=getLevel(Math.max(0,cp.deficit));
+    const row=document.createElement('div');
+    row.className='cp-row'+(i===0?' latest':'');
+    row.innerHTML=`
+      <div class="cp-num">${cp.no}<div style="font-size:6.5px; font-weight:600; opacity:.75; margin-top:1px">${cp.cumMedia>=1000?(cp.cumMedia/1000).toFixed(1)+'k':cp.cumMedia}</div></div>
+      <div style="flex:1">
+        <div style="font-size:12.5px; font-weight:600">+${cp.addMedia.toLocaleString()} mL in · +${cp.addOutput.toLocaleString()} mL out</div>
+        <div style="font-size:10.5px; color:var(--text2)">${cp.time} น. · ${cp.elapsed}' · Σ ${cp.cumMedia.toLocaleString()}/${cp.cumOutput.toLocaleString()} mL</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:800; font-size:14px; color:${l.color}">${cp.deficit.toLocaleString()}</div>
+        <span class="cp-badge" style="color:${l.color}; background:${l.tint}">${l.key}</span>
+      </div>`;
+    rows.appendChild(row);
+  });
+  document.getElementById('cp-count').textContent=state.checkpoints.length+' รายการ';
+
+  triggerSmartAlert(lv.key, def);
+  updateStickyDeficit(def, lv);
+}
+
+function updateStickyDeficit(def, lv, projected){
+  const sd=document.getElementById('sticky-deficit');
+  if(sd.style.display==='none') return;
+  document.getElementById('sd-dot').style.background=lv.color;
+  document.getElementById('sd-value').textContent=def.toLocaleString()+' mL'+(projected?' (คาดการณ์)':'');
+  document.getElementById('sd-value').style.color=lv.color;
+  document.getElementById('sd-remain').textContent=Math.max(0,HARD_STOP-def).toLocaleString();
+  sd.style.borderBottomColor=lv.color;
+}
+
+function showModal(msg,onOk){
+  document.getElementById('modal-msg').textContent=msg;
+  document.getElementById('modal-overlay').style.display='flex';
+  document.getElementById('modal-ok').onclick=()=>{ closeModal(); onOk(); };
+}
+function closeModal(){ document.getElementById('modal-overlay').style.display='none'; }
+
+function openSettings(){
+  document.getElementById('settings-url').value=SCRIPT_URL;
+  document.getElementById('settings-status').textContent=SCRIPT_URL?'✓ มี URL บันทึกไว้แล้ว':'ยังไม่ได้ตั้งค่า — ข้อมูลจะเก็บแค่ในเครื่องนี้';
+  document.getElementById('settings-status').style.color=SCRIPT_URL?'var(--green)':'var(--amber)';
+  setVoiceMode(voiceMode);
+  document.getElementById('settings-overlay').style.display='flex';
+}
+function closeSettings(){ document.getElementById('settings-overlay').style.display='none'; }
+function saveSettings(){
+  const url=document.getElementById('settings-url').value.trim();
+  SCRIPT_URL=url; localStorage.setItem('hystero_script_url',url);
+  document.getElementById('settings-status').textContent=url?'✓ บันทึกแล้ว':'ล้าง URL แล้ว';
+  document.getElementById('settings-status').style.color=url?'var(--green)':'var(--amber)';
+}
+async function testConnection(){
+  const url=document.getElementById('settings-url').value.trim();
+  if(!url){ document.getElementById('settings-status').textContent='กรุณาใส่ URL ก่อน'; return; }
+  document.getElementById('settings-status').textContent='⟳ กำลังทดสอบ...';
+  try{ await fetch(url,{method:'GET',mode:'no-cors'});
+    document.getElementById('settings-status').textContent='ส่งคำขอทดสอบแล้ว — เบราว์เซอร์ไม่สามารถยืนยันผลจริงได้เมื่อใช้ no-cors';
+    document.getElementById('settings-status').style.color='var(--amber)';
+  }catch(e){
+    document.getElementById('settings-status').textContent='✕ เชื่อมต่อไม่ได้';
+    document.getElementById('settings-status').style.color='var(--red)';
+  }
+}
+
+async function sendToSheets(record){
+  if(!SCRIPT_URL) return;
+  const si=document.getElementById('sync-indicator'), st=document.getElementById('sync-text');
+  si.style.display='block'; st.textContent='⟳ กำลังบันทึกไปยัง Google Sheets...';
+  try{
+    await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(record)});
+    st.textContent='ส่งคำขอไปยัง Google Sheets แล้ว — กรุณาตรวจสอบในชีตอีกครั้ง'; st.style.color='var(--amber)';
+  }catch(e){ st.textContent='⚠ บันทึกไม่สำเร็จ (ข้อมูลยังอยู่ในเครื่อง)'; st.style.color='var(--amber)'; }
+  setTimeout(()=>{ si.style.display='none'; st.style.color='var(--text2)'; },4000);
+}
+
+function saveToHistory(){
+  const def=state.mediaUsed-state.outputCollected, lv=getLevel(Math.max(0,def));
+  const endTime=new Date();
+  const record={
+    id:Date.now(), patient:{...state.patient},
+    startTime:state.startTime.toISOString(), endTime:endTime.toISOString(),
+    checkpoints:[...state.checkpoints], totalMedia:state.mediaUsed, totalOutput:state.outputCollected,
+    finalDeficit:def, finalAlert:lv.key, notes:document.getElementById('i-notes').value,
+  };
+  const all=getStoredCases();
+  all.unshift(record);
+  localStorage.setItem('hystero_cases',JSON.stringify(all));
+  sendToSheets(record);
+}
+function renderHistory(){
+  const all=getStoredCases();
+  const el=document.getElementById('history-list');
+  if(!all.length){ el.innerHTML='<div style="text-align:center;color:var(--text2);padding:24px;font-size:12.5px">ยังไม่มีประวัติเคส</div>'; return; }
+  const byHN={};
+  all.forEach(c=>{ const hn=(c.patient && c.patient.hn) || 'Unknown'; if(!byHN[hn]) byHN[hn]=[]; byHN[hn].push(c); });
+  el.innerHTML='';
+  Object.keys(byHN).forEach(hn=>{
+    const section=document.createElement('div'); section.style.marginBottom='14px';
+    section.innerHTML=`<div style="font-size:10.5px;color:var(--text2);font-weight:700;letter-spacing:.05em;margin-bottom:6px">HN: ${esc(hn)}</div>`;
+    byHN[hn].forEach(c=>{
+      const lv=getLevel(Math.max(0,c.finalDeficit));
+      const dt=new Date(c.startTime);
+      const dateStr=dt.toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric'});
+      const startT=dt.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+      const endT=new Date(c.endTime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+      const row=document.createElement('div'); row.className='case-row';
+      row.innerHTML=`
+        <div>
+          <div class="name">${esc(c.patient.name||'(ไม่ระบุชื่อ)')} — HN ${esc(c.patient.hn)}</div>
+          <div class="meta">${esc(dateStr)} ${esc(startT)}–${esc(endT)} น. | แพทย์: ${esc(c.patient.surgeon||'-')} | ${esc(c.patient.operation||'-')} | ${c.checkpoints.length} CP</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="text-align:right">
+            <div style="font-size:10.5px;color:var(--text2)">Final Deficit</div>
+            <div style="font-size:15px;font-weight:800;color:${lv.color}">${c.finalDeficit.toLocaleString()} mL</div>
+          </div>
+          <span class="cp-badge" style="color:${lv.color};background:${lv.tint}">${lv.key}</span>
+          <button class="btn btn-ghost" style="padding:5px 9px;font-size:10px" onclick="viewCase(${c.id})">ดู</button>
+          <button class="btn btn-green" style="padding:5px 9px;font-size:10px" onclick="exportSingleExcel(${c.id})">Excel</button>
+          <button class="btn btn-ghost" style="padding:5px 9px;font-size:10px" onclick="printFromHistory(${c.id})">🖨</button>
+          <button class="btn btn-danger-outline" style="padding:5px 9px;font-size:10px" onclick="deleteCase(${c.id})">🗑</button>
+        </div>`;
+      section.appendChild(row);
+    });
+    el.appendChild(section);
+  });
+}
+function clearAll(){
+  showModal('ลบประวัติเคสทั้งหมด? ไม่สามารถกู้คืนได้', ()=>{ localStorage.removeItem('hystero_cases'); renderHistory(); });
+}
+function deleteCase(id){
+  const all=getStoredCases();
+  const c=all.find(x=>x.id===id);
+  const label = c ? `HN ${c.patient.hn} — ${c.patient.name||'(ไม่ระบุชื่อ)'}` : 'เคสนี้';
+  showModal(`ลบ ${label} ออกจากประวัติ? ไม่สามารถกู้คืนได้`, ()=>{
+    const remaining = all.filter(x=>x.id!==id);
+    localStorage.setItem('hystero_cases', JSON.stringify(remaining));
+    renderHistory();
+  });
+}
+function viewCase(id){
+  const all=getStoredCases();
+  const c=all.find(x=>x.id===id); if(!c) return;
+  const lv=getLevel(Math.max(0,c.finalDeficit));
+  const rows=c.checkpoints.map(cp=>{
+    const l=getLevel(Math.max(0,cp.deficit));
+    return `<tr><td style="padding:6px;text-align:center">${cp.no}</td><td style="padding:6px;text-align:center">${cp.time}</td>
+      <td style="padding:6px;text-align:center;color:var(--blue)">+${cp.addMedia.toLocaleString()}</td>
+      <td style="padding:6px;text-align:center;color:var(--green)">+${cp.addOutput.toLocaleString()}</td>
+      <td style="padding:6px;text-align:center;font-weight:700;color:${l.color}">${cp.deficit.toLocaleString()}</td></tr>`;
+  }).join('');
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(10,16,24,.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:600px;width:100%;max-height:85vh;overflow-y:auto;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div><div style="font-size:15px;font-weight:800">HN: ${esc(c.patient.hn)} — ${esc(c.patient.name||'-')}</div><div style="font-size:11px;color:var(--text2)">${esc(c.patient.date)} | ${esc(c.patient.surgeon||'-')}</div></div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" class="btn btn-ghost" style="padding:6px 12px">✕</button>
+    </div>
+    <div style="background:${lv.tint};border:1px solid ${lv.color};border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;gap:16px;align-items:center">
+      <div style="font-size:28px;color:${lv.color};font-weight:900">${c.finalDeficit.toLocaleString()} mL</div>
+      <span class="cp-badge" style="color:${lv.color};background:var(--card)">${lv.key}</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="color:var(--text2)"><th>#</th><th>เวลา</th><th>+Intake</th><th>+Output</th><th>Deficit</th></tr></thead><tbody>${rows}</tbody></table>
+    ${c.notes?`<div style="margin-top:12px;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12px"><b>หมายเหตุ:</b> ${esc(c.notes)}</div>`:''}
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick=e=>{ if(e.target===overlay) overlay.remove(); };
+}
+
+function buildWorkbook(cases){
+  const wb=XLSX.utils.book_new();
+  const summaryHeader=['HN','ชื่อผู้ป่วย','วันที่','เวลาเริ่ม','แพทย์','พยาบาล','การวินิจฉัย','หัตถการ','Checkpoints','Total NSS (mL)','Total Output (mL)','Final Deficit (mL)','Status'];
+  const summaryRows=cases.map(c=>[c.patient.hn,c.patient.name,c.patient.date,new Date(c.startTime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}),
+    c.patient.surgeon,c.patient.nurse,c.patient.dx,c.patient.operation||'',c.checkpoints.length,c.totalMedia,c.totalOutput,c.finalDeficit,c.finalAlert]);
+  const ws=XLSX.utils.aoa_to_sheet([summaryHeader,...summaryRows]);
+  ws['!cols']=[{wch:12},{wch:20},{wch:12},{wch:10},{wch:16},{wch:16},{wch:20},{wch:24},{wch:12},{wch:14},{wch:14},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,ws,'สรุปทุกเคส');
+  const byHN={};
+  cases.forEach(c=>{ const k=c.patient.hn||'Unknown'; if(!byHN[k]) byHN[k]=[]; byHN[k].push(c); });
+  Object.keys(byHN).forEach(hn=>{
+    const rows=[['HN: '+hn],[],['CP','เวลา','นาที','HN','ชื่อ','วันที่','NSS','ΣNSS','Output','ΣOutput','Deficit','Status','หมายเหตุ']];
+    byHN[hn].forEach(c=>{
+      c.checkpoints.forEach(cp=>rows.push([cp.no,cp.time,cp.elapsed,c.patient.hn,c.patient.name,c.patient.date,cp.addMedia,cp.cumMedia,cp.addOutput,cp.cumOutput,cp.deficit,cp.level,c.notes||'']));
+      rows.push([]);
+    });
+    const ws2=XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb,ws2,safeSheetName('HN_'+hn));
+  });
+  return wb;
+}
+function exportExcel(){
+  try{
+    if(typeof XLSX === 'undefined'){ showModal('ไม่สามารถโหลดระบบ Excel ได้ — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต หรือใช้ไฟล์เวอร์ชัน Offline', ()=>{}); return; }
+    const c={id:Date.now(),patient:{...state.patient},startTime:state.startTime.toISOString(),endTime:new Date().toISOString(),
+      checkpoints:[...state.checkpoints],totalMedia:state.mediaUsed,totalOutput:state.outputCollected,
+      finalDeficit:state.mediaUsed-state.outputCollected,finalAlert:getLevel(Math.max(0,state.mediaUsed-state.outputCollected)).key,
+      notes:document.getElementById('i-notes').value};
+    XLSX.writeFile(buildWorkbook([c]),`Hystero_${safeFilePart(state.patient.hn)}_${safeFilePart(state.patient.date,'today')}.xlsx`);
+  }catch(e){
+    showModal('เกิดข้อผิดพลาดขณะสร้างไฟล์ Excel: '+e.message, ()=>{});
+  }
+}
+function exportAllExcel(){
+  if(typeof XLSX === 'undefined'){ showModal('ไม่สามารถโหลดระบบ Excel ได้ — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต หรือใช้ไฟล์เวอร์ชัน Offline', ()=>{}); return; }
+  const all=getStoredCases();
+  if(!all.length){ showModal('ยังไม่มีข้อมูลเคสที่บันทึกไว้',()=>{}); return; }
+  XLSX.writeFile(buildWorkbook(all),`Hystero_AllCases_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+function exportSingleExcel(id){
+  if(typeof XLSX === 'undefined'){ showModal('ไม่สามารถโหลดระบบ Excel ได้ — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต หรือใช้ไฟล์เวอร์ชัน Offline', ()=>{}); return; }
+  const all=getStoredCases();
+  const c=all.find(x=>x.id===id); if(!c) return;
+  XLSX.writeFile(buildWorkbook([c]),`Hystero_${safeFilePart(c.patient.hn)}_${safeFilePart(c.patient.date,'today')}.xlsx`);
+}
+
+function printReportHTML(p, checkpoints, totalMedia, totalOutput, finalDeficit, notes, startTime, endTime){
+  const lv=getLevel(Math.max(0,finalDeficit));
+  const safeP = {
+    hn: esc(p.hn || '-'),
+    name: esc(p.name || '-'),
+    date: esc(p.date || '-'),
+    surgeon: esc(p.surgeon || '-'),
+    nurse: esc(p.nurse || '-'),
+    dx: esc(p.dx || '-'),
+    operation: esc(p.operation || '-'),
+  };
+  const safeNotes = esc(notes || '');
+  const startStr=new Date(startTime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  const endStr=new Date(endTime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  const dur=Math.round((new Date(endTime)-new Date(startTime))/60000);
+  const rows=checkpoints.map((cp,i)=>{
+    const l=getLevel(Math.max(0,cp.deficit));
+    return `<tr style="background:${i%2===0?'#fff':'#f5f7fa'}">
+      <td style="text-align:center;background:#e8f1fb;font-weight:700;color:#1976D2;border:1px solid #d8e2eb">${cp.no}</td>
+      <td style="text-align:center;border:1px solid #d8e2eb">${cp.time}</td><td style="text-align:center;border:1px solid #d8e2eb">${cp.elapsed}'</td>
+      <td style="text-align:center;color:#1976D2;font-weight:600;border:1px solid #d8e2eb">+${cp.addMedia.toLocaleString()}</td>
+      <td style="text-align:center;border:1px solid #d8e2eb">${cp.cumMedia.toLocaleString()}</td>
+      <td style="text-align:center;color:#2E7D32;font-weight:600;border:1px solid #d8e2eb">+${cp.addOutput.toLocaleString()}</td>
+      <td style="text-align:center;border:1px solid #d8e2eb">${cp.cumOutput.toLocaleString()}</td>
+      <td style="text-align:center;font-weight:700;color:${l.hex};border:1px solid #d8e2eb">${cp.deficit.toLocaleString()}</td>
+      <td style="text-align:center;font-weight:700;color:${l.hex};border:1px solid #d8e2eb">${l.key}</td><td style="border:1px solid #d8e2eb"></td></tr>`;
+  }).join('');
+  return `<div style="font-family:Arial,sans-serif;color:#111;background:#fff">
+    <div style="background:#1976D2;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div><div style="font-size:18px;font-weight:700">HYSTEROSCOPY FLUID DEFICIT MONITORING</div>
+      <div style="font-size:9px;color:#cfe2f7;margin-top:2px">NSS Isotonic — AAGL/ESGE Guideline | Hard Stop 2,500 mL</div></div>
+      <div style="text-align:right;font-size:9px;color:#cfe2f7"><div>พิมพ์: ${new Date().toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'})}</div></div>
+    </div>
+    <div style="border:2px solid ${lv.hex};border-radius:8px;padding:12px 16px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;gap:16px">
+        <div style="flex:1;font-size:11px;line-height:1.9">
+          <b>ผู้ป่วย:</b> ${safeP.name} | <b>HN:</b> ${safeP.hn}<br>
+          <b>วันที่:</b> ${safeP.date} | <b>เวลา:</b> ${esc(startStr)}–${esc(endStr)} น. | <b>รวม:</b> ${dur} นาที<br>
+          <b>แพทย์:</b> ${safeP.surgeon} | <b>พยาบาล:</b> ${safeP.nurse}<br>
+          <b>Dx:</b> ${safeP.dx} | <b>Operation:</b> ${safeP.operation}<br>
+          <b>Distension Media:</b> NSS | <b>Hard Stop:</b> 2,500 mL
+        </div>
+        <div style="text-align:center;min-width:130px;border-left:1px solid #ddd;padding-left:16px">
+          <div style="font-size:9px;font-weight:700;color:#555">FINAL FLUID DEFICIT</div>
+          <div style="font-size:32px;font-weight:900;color:${lv.hex}">${finalDeficit.toLocaleString()}</div>
+          <div style="font-size:11px;color:#555">mL</div>
+          <div style="margin-top:6px;background:${lv.hex};color:#fff;font-size:11px;font-weight:700;padding:3px 12px;border-radius:99px;display:inline-block">${lv.key}</div>
+        </div>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:6px;font-size:8.5px">
+      <thead><tr style="background:#1976D2;color:#fff"><th style="border:1px solid #d8e2eb;padding:5px">CP</th><th style="border:1px solid #d8e2eb;padding:5px">เวลา</th>
+      <th style="border:1px solid #d8e2eb;padding:5px">นาที</th><th style="border:1px solid #d8e2eb;padding:5px">NSS</th><th style="border:1px solid #d8e2eb;padding:5px">ΣNSS</th>
+      <th style="border:1px solid #d8e2eb;padding:5px">Output</th><th style="border:1px solid #d8e2eb;padding:5px">ΣOutput</th><th style="border:1px solid #d8e2eb;padding:5px">Deficit</th>
+      <th style="border:1px solid #d8e2eb;padding:5px">Status</th><th style="border:1px solid #d8e2eb;padding:5px">หมายเหตุ</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    ${safeNotes?`<div style="background:#f5f7fa;border:1px solid #d8e2eb;border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:10px"><b>หมายเหตุ:</b> ${safeNotes}</div>`:''}
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:#444;margin-top:14px">
+      <span>ลงชื่อพยาบาลบันทึก ..........................</span><span>วันที่ ......... เวลา ......... น.</span><span>แพทย์รับทราบ ..........................</span>
+    </div>
+  </div>`;
+}
+function printCase(){
+  try{
+    if(!state.startTime){ showModal('ยังไม่ได้เริ่มเคส ไม่สามารถพิมพ์รายงานได้', ()=>{}); return; }
+    const notesEl = document.getElementById('i-notes');
+    const html=printReportHTML(state.patient, state.checkpoints, state.mediaUsed, state.outputCollected,
+      state.mediaUsed-state.outputCollected, notesEl?notesEl.value:'', state.startTime, new Date());
+    document.getElementById('print-area').innerHTML=html;
+    setTimeout(()=>{ window.print(); }, 80);
+  }catch(e){
+    showModal('เกิดข้อผิดพลาดขณะสร้างรายงาน: '+e.message, ()=>{});
+  }
+}
+function printFromHistory(id){
+  try{
+    const all=getStoredCases();
+    const c=all.find(x=>x.id===id);
+    if(!c){ showModal('ไม่พบข้อมูลเคสนี้', ()=>{}); return; }
+    const html=printReportHTML(c.patient, c.checkpoints, c.totalMedia, c.totalOutput, c.finalDeficit, c.notes, c.startTime, c.endTime);
+    document.getElementById('print-area').innerHTML=html;
+    setTimeout(()=>{ window.print(); }, 80);
+  }catch(e){
+    showModal('เกิดข้อผิดพลาดขณะสร้างรายงาน: '+e.message, ()=>{});
+  }
+}
+</script>
+</body>
+</html>
